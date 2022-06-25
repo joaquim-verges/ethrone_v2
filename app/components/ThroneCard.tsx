@@ -26,10 +26,13 @@ export const ThroneCard = () => {
   const [prize, setPrize] = useState("-");
   useEffect(() => {
     if (sdk) {
-      sdk
-        .getProvider()
-        .getBalance(contractAddr)
-        .then((balance) => setPrize(ethers.utils.formatEther(balance)));
+      const intervalId = setInterval(() => {
+        sdk
+          .getProvider()
+          .getBalance(contractAddr)
+          .then((balance) => setPrize(ethers.utils.formatEther(balance)));
+      }, 1000 * 5); // in milliseconds
+      return () => clearInterval(intervalId);
     }
   }, [sdk]);
   const [
@@ -90,9 +93,12 @@ export const ThroneCard = () => {
 
   useEffect(() => {
     if (contract) {
-      fetchThroneData()
-        .then((data) => setThroneData(data))
-        .catch((e) => console.error(e));
+      const intervalId = setInterval(() => {
+        fetchThroneData()
+          .then((data) => setThroneData(data))
+          .catch((e) => console.error(e));
+      }, 1000 * 5); // in milliseconds
+      return () => clearInterval(intervalId);
     }
   }, [contract]);
 
@@ -109,14 +115,14 @@ export const ThroneCard = () => {
         Current Throne Owner {shortenAddress(throneData.owner)}
       </h4>
       <h4 className="text-lg">Time Spent {throneData.time} seconds</h4>
-      <h4 className="text-lg">Total Prize {prize} MATIC</h4>
+      <h4 className="text-lg">Total Prize {prize} ETH</h4>
       <h4 className="text-lg">Time Left {throneData.timeLeft} seconds</h4>
       <button
         onClick={() => txAction(takeThrone, throneData)}
         className="rounded-lg bg-slate-400 p-2 w-64"
       >
         {txLabel(
-          `Take Throne (${ethers.utils.formatEther(throneData.price)} MATIC)`
+          `Take Throne (${ethers.utils.formatEther(throneData.price)} ETH)`
         )}
       </button>
       <hr className="m-4" />
@@ -125,6 +131,7 @@ export const ThroneCard = () => {
         onClick={() => txAction(awardPrize)}
         className="rounded-lg bg-slate-400 p-2 w-64"
       >
+        ``
         {txLabel("Award prize")}
       </button>
     </div>

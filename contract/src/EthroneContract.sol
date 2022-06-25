@@ -35,7 +35,7 @@ contract EthroneContract {
     mapping (address => uint8) timeBonusMapping;
 
     event ThroneTaken(address prevOwner, address newOwner, uint32 prevOwnerTimeSpent, uint32 round, uint256 timestamp);
-    event WinnerChosen(address winner, uint256 prize, uint32 totalTimeSpent, uint32 round, uint32 totalPlayers);
+    event WinnerChosen(address winner, uint256 prize, uint32 totalTimeSpent, uint32 round, uint32 totalPlayers, uint256 timestamp);
     event TimeBoosterUsed(address user, uint8 bonusUsed, uint32 round, uint256 timestamp);
 
     struct ThroneOwner {
@@ -141,7 +141,7 @@ contract EthroneContract {
         lastWinner = winner;
         winnerToRoundMapping[winner] = round;
         roundToWinnerMapping[round] = winner;
-        emit WinnerChosen(winner, winnerPrize, accumulatedTimeSpent(winner), round, participantSize);
+        emit WinnerChosen(winner, winnerPrize, accumulatedTimeSpent(winner), round, participantSize, block.timestamp);
 
         // cleanup and start next round
         resetGameAndStartNextRound();
