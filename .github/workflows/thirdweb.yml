@@ -28,7 +28,7 @@ jobs:
         id: deploy
         if: github.event_name == 'pull_request' || github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
         run: |
-          DEPLOY=$(npx thirdweb deploy --ci | grep http)
+          DEPLOY=$(npx thirdweb deploy --ci -p contract | grep http)
           echo "::set-output name=stdout::$DEPLOY"
           echo "deploy_url: $DEPLOY"
 
@@ -36,10 +36,9 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
         id: publish
         run: |
-          PUBLISH=$(npx thirdweb publish --ci | grep http)
+          PUBLISH=$(npx thirdweb publish --ci -p contract | grep http)
           echo "::set-output name=stdout::$PUBLISH"
           echo "publish_url: $PUBLISH"
-
 
   comment_on_commit:
     runs-on: ubuntu-latest
@@ -65,7 +64,6 @@ jobs:
             <p>
             <a href="${{ needs.deploy_or_publish.outputs.deploy_output }}"><img width="120px" src="https://gateway.thirdweb.dev/ipfs/QmdS2yxCteNePeAw9h7dnaSvorNA1AMYCtX4DuG15YR3jo/0.svg" /></a>
           token: ${{ secrets.GITHUB_TOKEN }}
-
 
   comment_on_pr:
     runs-on: ubuntu-latest
