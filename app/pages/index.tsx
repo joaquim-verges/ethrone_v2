@@ -1,18 +1,14 @@
-import {
-  useAddress,
-  useDisconnect,
-  useMetamask,
-  useNetworkMismatch,
-} from "@thirdweb-dev/react";
+import { useMetamask, useNetworkMismatch } from "@thirdweb-dev/react";
 import type { NextPage } from "next";
+import { useDisconnect, useAccount } from "wagmi";
 import { EventsCard } from "../components/EventsCard";
 import { PlayerCard } from "../components/PlayerCard";
 import { ThroneCard } from "../components/ThroneCard";
 
 const Home: NextPage = () => {
-  const address = useAddress();
-  const connectWithMetamask = useMetamask();
-  const disconnectWallet = useDisconnect();
+  const { address } = useAccount();
+  const { connect: connectWithMetamask } = useMetamask();
+  const { disconnect: disconnectWallet } = useDisconnect();
   return (
     <div className="container mx-auto flex flex-col p-4">
       <div className="flex flex-row p-4">
@@ -20,14 +16,14 @@ const Home: NextPage = () => {
         <div className="flex flex-col">
           {address ? (
             <button
-              onClick={disconnectWallet}
+              onClick={() => disconnectWallet()}
               className="rounded-lg bg-slate-400 p-2 w-64"
             >
               Disconnect
             </button>
           ) : (
             <button
-              onClick={connectWithMetamask}
+              onClick={() => connectWithMetamask()}
               className="rounded-lg bg-slate-400 p-2 w-64"
             >
               Connect with Metamask

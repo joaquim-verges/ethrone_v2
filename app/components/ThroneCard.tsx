@@ -1,47 +1,23 @@
 import {
-  ChainId,
-  useAddress,
   useContract,
+  useContractCall,
+  useContractData,
   useMetamask,
-  useNetwork,
   useNetworkMismatch,
-  useSDK,
 } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useAccount, useBalance, useSwitchNetwork } from "wagmi";
 import { chainId, contractAddr } from "../data/const";
-import { shortenAddress } from "../data/utils";
-
-type ThroneData = {
-  owner: string;
-  time: number;
-  price: number;
-  timeLeft: number;
-};
 
 export const ThroneCard = () => {
-  const address = useAddress();
-  const connect = useMetamask();
-  const sdk = useSDK();
-  const [prize, setPrize] = useState("-");
-  useEffect(() => {
-    if (sdk) {
-      const intervalId = setInterval(() => {
-        sdk
-          .getProvider()
-          .getBalance(contractAddr)
-          .then((balance) => setPrize(ethers.utils.formatEther(balance)));
-      }, 1000 * 5); // in milliseconds
-      return () => clearInterval(intervalId);
-    }
-  }, [sdk]);
-  const [
-    {
-      data: { chain },
-    },
-    switchNetwork,
-  ] = useNetwork();
+  const { address } = useAccount();
+  const { connect } = useMetamask();
+
+  const { data } = useBalance({ addressOrName: contractAddr });
+  const prize = data?.formatted || "-";
   const mismatch = useNetworkMismatch();
+  const { switchNetwork } = useSwitchNetwork();
 
   const txLabel = (label: string) => {
     if (!address) {
@@ -52,55 +28,43 @@ export const ThroneCard = () => {
     }
     return label;
   };
-  const txAction = async (
-    promise: (...args: any[]) => Promise<any>,
-    ...args: any[]
-  ) => {
+  const txAction = async (promise: any, ...args: any[]) => {
     if (!address) {
       return await connect();
     }
     if (mismatch) {
       if (switchNetwork) {
-        await switchNetwork(chainId);
+        switchNetwork(chainId);
       }
       return;
     }
     await promise(...args);
   };
   const { contract, isLoading, isError } = useContract(contractAddr);
-  const [throneData, setThroneData] = useState<ThroneData>();
-  const fetchThroneData = async (): Promise<ThroneData> => {
-    const owner = await contract?.call("currentOwner");
-    const roundTime: number = await contract?.call("currentRoundTime");
-    const roundDuration: number = await contract?.call("roundDuration");
-    return {
-      owner,
-      time: await contract?.call("accumulatedTimeSpent", owner),
-      price: await contract?.call("throneCost"),
-      timeLeft: Math.max(0, roundDuration - roundTime),
-    };
-  };
+  const { data: roundDuration } = useContractData(contract, "roundDuration");
+  const { data: throneCost } = useContractData(contract, "throneCost");
 
-  const takeThrone = (throneData: ThroneData) => {
-    return contract!!.call("takeThrone", {
-      value: throneData.price,
-    });
-  };
+  const { data: owner } = useContractData(contract, "currentOwner");
+  const { data: roundTime, refetch } = useContractData(
+    contract,
+    "currentRoundTime"
+  );
+  const { data: timeSpent } = useContractData(
+    contract,
+    "accumulatedTimeSpent",
+    owner
+  );
+  const timeLeft = Math.max(0, roundDuration - roundTime);
 
-  const awardPrize = async () => {
-    return contract!!.call("awardPrize");
-  };
+  const { mutate: takeThrone } = useContractCall(contract, "takeThrone");
+  const { mutate: awardPrize } = useContractCall(contract, "awardPrize");
 
   useEffect(() => {
-    if (contract) {
-      const intervalId = setInterval(() => {
-        fetchThroneData()
-          .then((data) => setThroneData(data))
-          .catch((e) => console.error(e));
-      }, 1000 * 5); // in milliseconds
-      return () => clearInterval(intervalId);
-    }
-  }, [contract]);
+    const intervalId = setInterval(() => {
+      refetch(); // force re-render
+    }, 1000 * 5); // in milliseconds
+    return () => clearInterval(intervalId);
+  }, []);
 
   if (isLoading) {
     return <h4>Loading...</h4>;
@@ -109,31 +73,36 @@ export const ThroneCard = () => {
     return <h4>Error loading contract</h4>;
   }
 
-  return throneData ? (
+  return (
     <div className="flex flex-col p-4">
       <h4 className="text-lg font-bold">
-        Current Throne Owner {shortenAddress(throneData.owner)}
+        {/* Current Throne Owner {shortenAddress(owner)} */}
       </h4>
-      <h4 className="text-lg">Time Spent {throneData.time} seconds</h4>
+      <h4 className="text-lg">Time Spent {timeSpent} seconds</h4>
       <h4 className="text-lg">Total Prize {prize} ETH</h4>
-      <h4 className="text-lg">Time Left {throneData.timeLeft} seconds</h4>
+      <h4 className="text-lg">Time Left {timeLeft} seconds</h4>
       <button
-        onClick={() => txAction(takeThrone, throneData)}
+        onClick={() =>
+          txAction(takeThrone, {
+            value: throneCost,
+          })
+        }
         className="rounded-lg bg-slate-400 p-2 w-64"
       >
         {txLabel(
-          `Take Throne (${ethers.utils.formatEther(throneData.price)} ETH)`
+          `Take Throne (${
+            throneCost && ethers.utils.formatEther(throneCost)
+          } ETH)`
         )}
       </button>
       <hr className="m-4" />
 
       <button
-        onClick={() => txAction(awardPrize)}
+        onClick={() => awardPrize([])}
         className="rounded-lg bg-slate-400 p-2 w-64"
       >
-        ``
         {txLabel("Award prize")}
       </button>
     </div>
-  ) : null;
+  );
 };
