@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import "@thirdweb-dev/contracts/extension/ContractMetadata.sol";
+import "@thirdweb-dev/contracts/extension/Ownable.sol";
+
 /**
  * @title EthroneContract
  * @dev Manages the Ethrone game contract
@@ -15,11 +18,10 @@ pragma solidity >=0.8.0 <0.9.0;
  * if multiple top users with the same time spent -> the first player that has reached the time gets the prize
  * players that don't win get a 1h time bonus for next round, to use whenever they see fit, can accumulate more than 1 time bonus
  */
-contract EthroneContract {
+contract EthroneContract is ContractMetadata, Ownable {
 
     uint8 public immutable maxAttempts;
     uint32 public immutable roundDuration;
-    address public immutable contractOwner;
     uint256 public immutable throneCost;
     uint8 public immutable maxRoundBonus = 12; // max 12h bonus
 
@@ -45,7 +47,7 @@ contract EthroneContract {
     }
 
     constructor(uint32 duration, uint8 maxAttemptsPerPlayer, uint256 cost) {
-        contractOwner = msg.sender;
+        _setupOwner(msg.sender);
         round = 1;
         roundDuration = duration;
         lastRoundStartTime = block.timestamp;
@@ -73,7 +75,7 @@ contract EthroneContract {
         // contractOwner cannot take the throne
         address newOwner = msg.sender;
         require(newOwner != currentThroneOwner.user, "You already own the Ethrone!");
-        require(newOwner != contractOwner, "The contract owner is not allowed to play");
+        require(newOwner != owner(), "The contract owner is not allowed to play");
 
         // reject transaction if the current owner already owns this block
         bytes32 currentHash = blockhash(block.number - 1);
@@ -123,7 +125,7 @@ contract EthroneContract {
         for (uint32 i = 0; i < participantSize; i++) {
             address participant = participants[i];
             uint32 timeSpent = timeSpentMapping[participant];
-            if (timeSpent > longestTimeSpent && participant != contractOwner) {
+            if (timeSpent > longestTimeSpent && participant != owner()) {
                 winner = participant;
                 longestTimeSpent = timeSpent;
             }
@@ -131,13 +133,13 @@ contract EthroneContract {
 
         // assert valid winner
         require(winner != address(0x0), "Did not find a winner");
-        require(winner != contractOwner, "Winner cannot be the owner");
+        require(winner != owner(), "Winner cannot be the owner");
         // transfer prize
         uint256 totalPrize = currentPrizePool();
         uint256 winnerPrize = totalPrize * 90 / 100; // 90% for the winner
         uint256 maintenanceBudget = totalPrize - winnerPrize; // 10% for maintenance costs
         payable(winner).transfer(winnerPrize);
-        payable(contractOwner).transfer(maintenanceBudget);
+        payable(owner()).transfer(maintenanceBudget);
         lastWinner = winner;
         winnerToRoundMapping[winner] = round;
         roundToWinnerMapping[round] = winner;
@@ -275,9 +277,11 @@ contract EthroneContract {
         lastRoundStartTime = block.timestamp;
     }
 
-    // modifier to check if caller is owner
-    modifier isOwner() {
-        require(msg.sender == contractOwner, "Caller is not owner");
-        _;
+    function _canSetContractURI() internal override view returns (bool) {
+        return msg.sender == owner();
+    }
+
+    function _canSetOwner() internal override view returns (bool) {
+        return msg.sender == owner();
     }
 }
