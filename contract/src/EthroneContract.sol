@@ -36,8 +36,17 @@ contract EthroneContract is ContractMetadata, Ownable {
     mapping (uint32 => address) roundToWinnerMapping; 
     mapping (address => uint8) timeBonusMapping;
 
+    /**
+     * Fired when the throne is taken by someone
+     */
     event ThroneTaken(address prevOwner, address newOwner, uint32 prevOwnerTimeSpent, uint32 round, uint256 timestamp);
+    /**
+     * Fired when the round is over and the winner gets the prize
+     */
     event WinnerChosen(address winner, uint256 prize, uint32 totalTimeSpent, uint32 round, uint32 totalPlayers, uint256 timestamp);
+    /**
+     * Fired when a player consumes their time booster
+     */
     event TimeBoosterUsed(address user, uint8 bonusUsed, uint32 round, uint256 timestamp);
 
     struct ThroneOwner {
