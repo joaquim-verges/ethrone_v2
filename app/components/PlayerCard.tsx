@@ -1,10 +1,9 @@
-import { useContract, useContractData } from "@thirdweb-dev/react";
-import { useAccount } from "wagmi";
+import { useAddress, useContract, useContractData } from "@thirdweb-dev/react";
 import { contractAddr } from "../data/const";
 import { shortenAddress } from "../data/utils";
 
 export const PlayerCard = () => {
-  const { address } = useAccount();
+  const address = useAddress();
   const { contract, isLoading, isError } = useContract(contractAddr);
   const { data: time } = useContractData(contract, "numberOfAttemts", address);
   const { data: bonus } = useContractData(

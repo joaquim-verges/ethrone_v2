@@ -5,7 +5,7 @@ import { chainId } from "../data/const";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <ThirdwebProvider chainId={chainId}>
+    <ThirdwebProvider desiredChainId={chainId}>
       <Component {...pageProps} />
     </ThirdwebProvider>
   );
