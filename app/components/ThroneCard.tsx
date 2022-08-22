@@ -8,6 +8,7 @@ import {
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import { contractAddr } from "../data/const";
+import { shortenAddress } from "../data/utils";
 
 export const ThroneCard = () => {
   const address = useAddress();
@@ -49,7 +50,7 @@ export const ThroneCard = () => {
   return (
     <div className="flex flex-col p-4">
       <h4 className="text-lg font-bold">
-        {/* Current Throne Owner {shortenAddress(owner)} */}
+        Current Throne Owner: {owner ? shortenAddress(owner) : "no one"}
       </h4>
       <h4 className="text-lg">Time Spent {timeSpent} seconds</h4>
       <h4 className="text-lg">Total Prize {prize} ETH</h4>
